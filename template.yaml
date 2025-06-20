@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Temperature monitoring app with Nest API integration
+
+Parameters:
+  NestClientId:
+    Type: String
+    Description: Nest API Client ID
+  NestClientSecret:
+    Type: String
+    Description: Nest API Client Secret
+    NoEcho: true
+  NestRefreshToken:
+    Type: String
+    Description: Nest API Refresh Token
+    NoEcho: true
+  NestProjectId:
+    Type: String
+    Description: Nest Device Access Project ID
+
+Resources:
+  TemperatureTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: temperature-readings
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: device_id
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: N
+      KeySchema:
+        - AttributeName: device_id
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
+  TempPollerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.11
+      Timeout: 30
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: !Ref TemperatureTable
+          NEST_CLIENT_ID: !Ref NestClientId
+          NEST_CLIENT_SECRET: !Ref NestClientSecret
+          NEST_REFRESH_TOKEN: !Ref NestRefreshToken
+          NEST_PROJECT_ID: !Ref NestProjectId
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TemperatureTable
+      Events:
+        ScheduledEvent:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes)
+            Enabled: true
+
+Outputs:
+  TemperatureTableName:
+    Description: DynamoDB table name
+    Value: !Ref TemperatureTable
+  FunctionName:
+    Description: Lambda function name
+    Value: !Ref TempPollerFunction
