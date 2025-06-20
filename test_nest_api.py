@@ -28,11 +28,16 @@ def test_nest_connection():
             print(f"  - Device: {device.get('displayName', device['name'])}")
             print(f"    ID: {device['name']}")
             
-            temp = client.get_temperature(device['name'])
-            if temp:
-                print(f"    Temperature: {temp}°C ({temp * 9/5 + 32:.1f}°F)")
+            sensor_data = client.get_sensor_data(device['name'])
+            if sensor_data:
+                if 'temperature_celsius' in sensor_data:
+                    temp = sensor_data['temperature_celsius']
+                    print(f"    Temperature: {temp}°C ({temp * 9/5 + 32:.1f}°F)")
+                if 'humidity_percent' in sensor_data:
+                    humidity = sensor_data['humidity_percent']
+                    print(f"    Humidity: {humidity}%")
             else:
-                print("    Temperature: Not available")
+                print("    No sensor data available")
         
         return True
         

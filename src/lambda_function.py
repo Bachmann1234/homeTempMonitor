@@ -17,28 +17,29 @@ def lambda_handler(event, context):
         dynamodb_client = DynamoDBClient(os.environ['DYNAMODB_TABLE'])
         
         devices = nest_client.get_devices()
-        temperature_readings = []
+        sensor_readings = []
         
         for device in devices:
-            reading = nest_client.get_temperature(device['name'])
+            reading = nest_client.get_sensor_data(device['name'])
             if reading:
-                temperature_readings.append({
+                reading_data = {
                     'device_id': device['name'],
                     'device_name': device.get('displayName', device['name']),
-                    'temperature_celsius': reading,
                     'timestamp': int(time.time()),
                     'readable_time': datetime.utcnow().isoformat()
-                })
+                }
+                reading_data.update(reading)
+                sensor_readings.append(reading_data)
         
-        if temperature_readings:
-            dynamodb_client.save_readings(temperature_readings)
-            print(f"Saved {len(temperature_readings)} temperature readings")
+        if sensor_readings:
+            dynamodb_client.save_readings(sensor_readings)
+            print(f"Saved {len(sensor_readings)} sensor readings")
         
         return {
             'statusCode': 200,
             'body': json.dumps({
-                'message': f'Successfully processed {len(temperature_readings)} readings',
-                'readings': temperature_readings
+                'message': f'Successfully processed {len(sensor_readings)} readings',
+                'readings': sensor_readings
             })
         }
         
@@ -94,7 +95,7 @@ class NestClient:
         data = response.json()
         return data.get('devices', [])
     
-    def get_temperature(self, device_name):
+    def get_sensor_data(self, device_name):
         headers = {
             'Authorization': f'Bearer {self.get_access_token()}',
             'Content-Type': 'application/json'
@@ -107,11 +108,19 @@ class NestClient:
         device_data = response.json()
         traits = device_data.get('traits', {})
         
+        data = {}
+        
+        # Get temperature
         temperature_trait = traits.get('sdm.devices.traits.Temperature', {})
         if temperature_trait:
-            return temperature_trait.get('ambientTemperatureCelsius')
+            data['temperature_celsius'] = temperature_trait.get('ambientTemperatureCelsius')
             
-        return None
+        # Get humidity
+        humidity_trait = traits.get('sdm.devices.traits.Humidity', {})
+        if humidity_trait:
+            data['humidity_percent'] = humidity_trait.get('ambientHumidityPercent')
+            
+        return data
 
 
 class DynamoDBClient:
