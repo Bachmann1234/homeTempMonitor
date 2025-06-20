@@ -179,12 +179,8 @@ class DynamoDBClient:
         self.table = self.dynamodb.Table(table_name)
     
     def save_readings(self, readings):
-        ttl_days = 365
-        ttl_timestamp = int((datetime.utcnow() + timedelta(days=ttl_days)).timestamp())
-        
         with self.table.batch_writer() as batch:
             for reading in readings:
-                reading['ttl'] = ttl_timestamp
                 batch.put_item(Item=reading)
     
     def get_recent_readings(self, device_id, hours=24):

@@ -18,8 +18,8 @@ AWS serverless app to track temperature from Nest sensors and store in DynamoDB.
 
 ## Architecture
 
-- **Lambda**: Polls Nest API every 5 minutes
-- **DynamoDB**: Stores readings with 1-year TTL
+- **Lambda**: Polls Nest API every 15 minutes
+- **DynamoDB**: Stores readings 
 - **EventBridge**: Triggers Lambda on schedule
 
 ## Cost

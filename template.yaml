@@ -46,9 +46,6 @@ Resources:
           KeyType: HASH
         - AttributeName: timestamp
           KeyType: RANGE
-      TimeToLiveSpecification:
-        AttributeName: ttl
-        Enabled: true
 
   TempPollerFunction:
     Type: AWS::Serverless::Function
@@ -74,7 +71,7 @@ Resources:
         ScheduledEvent:
           Type: Schedule
           Properties:
-            Schedule: rate(5 minutes)
+            Schedule: rate(15 minutes)
             Enabled: true
 
 Outputs:
