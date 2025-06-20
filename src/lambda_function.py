@@ -14,6 +14,7 @@ def lambda_handler(event, context):
             refresh_token=os.environ['NEST_REFRESH_TOKEN']
         )
         
+        weather_client = OpenWeatherClient(os.environ['OPENWEATHER_API_KEY'])
         dynamodb_client = DynamoDBClient(os.environ['DYNAMODB_TABLE'])
         
         devices = nest_client.get_devices()
@@ -30,6 +31,18 @@ def lambda_handler(event, context):
                 }
                 reading_data.update(reading)
                 sensor_readings.append(reading_data)
+        
+        # Get outdoor weather data
+        outdoor_weather = weather_client.get_weather_data()
+        if outdoor_weather:
+            outdoor_reading = {
+                'device_id': 'outdoor_medford_ma',
+                'device_name': 'Medford, MA (OpenWeather)',
+                'timestamp': int(time.time()),
+                'readable_time': datetime.utcnow().isoformat()
+            }
+            outdoor_reading.update(outdoor_weather)
+            sensor_readings.append(outdoor_reading)
         
         if sensor_readings:
             dynamodb_client.save_readings(sensor_readings)
@@ -121,6 +134,43 @@ class NestClient:
             data['humidity_percent'] = humidity_trait.get('ambientHumidityPercent')
             
         return data
+
+
+class OpenWeatherClient:
+    def __init__(self, api_key, lat=None, lon=None):
+        self.api_key = api_key
+        self.base_url = "https://api.openweathermap.org/data/3.0"
+        # Use environment variables or defaults to Boston, MA
+        self.lat = lat or os.environ.get('WEATHER_LAT', 42.3601)
+        self.lon = lon or os.environ.get('WEATHER_LON', -71.0589)
+    
+    def get_weather_data(self):
+        url = f"{self.base_url}/onecall"
+        params = {
+            'lat': self.lat,
+            'lon': self.lon,
+            'appid': self.api_key,
+            'units': 'metric',
+            'exclude': 'minutely,hourly,daily,alerts'  # Only get current weather
+        }
+
+        print(url)
+        print(params)
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        
+        data = response.json()
+        current = data['current']
+        
+        return {
+            'temperature_celsius': current['temp'],
+            'humidity_percent': current['humidity'],
+            'weather_description': current['weather'][0]['description'],
+            'feels_like_celsius': current['feels_like'],
+            'pressure_hpa': current['pressure'],
+            'uv_index': current.get('uvi', 0),
+            'wind_speed_ms': current.get('wind_speed', 0)
+        }
 
 
 class DynamoDBClient:

@@ -17,6 +17,18 @@ Parameters:
   NestProjectId:
     Type: String
     Description: Nest Device Access Project ID
+  OpenWeatherApiKey:
+    Type: String
+    Description: OpenWeather API Key
+    NoEcho: true
+  WeatherLat:
+    Type: Number
+    Description: Latitude for weather location
+    Default: 42.3601
+  WeatherLon:
+    Type: Number
+    Description: Longitude for weather location
+    Default: -71.0589
 
 Resources:
   TemperatureTable:
@@ -52,6 +64,9 @@ Resources:
           NEST_CLIENT_SECRET: !Ref NestClientSecret
           NEST_REFRESH_TOKEN: !Ref NestRefreshToken
           NEST_PROJECT_ID: !Ref NestProjectId
+          OPENWEATHER_API_KEY: !Ref OpenWeatherApiKey
+          WEATHER_LAT: !Ref WeatherLat
+          WEATHER_LON: !Ref WeatherLon
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref TemperatureTable
