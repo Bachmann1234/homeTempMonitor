@@ -2,7 +2,7 @@
 
 import argparse
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -169,11 +169,11 @@ def main():
     
     args = parser.parse_args()
     
-    # Default dates
+    # Default dates (use UTC to match database)
     if args.start:
         start_date = args.start
     else:
-        start_date = datetime.now().strftime('%Y-%m-%d')
+        start_date = datetime.now(timezone.utc).strftime('%Y-%m-%d')
     
     if args.end:
         end_date = args.end
