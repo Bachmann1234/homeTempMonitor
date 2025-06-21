@@ -2,6 +2,7 @@ import json
 import os
 import time
 from datetime import datetime, timedelta
+from decimal import Decimal
 import boto3
 import requests
 
@@ -181,7 +182,20 @@ class DynamoDBClient:
     def save_readings(self, readings):
         with self.table.batch_writer() as batch:
             for reading in readings:
-                batch.put_item(Item=reading)
+                # Convert floats to Decimal for DynamoDB
+                converted_reading = self._convert_floats_to_decimal(reading)
+                batch.put_item(Item=converted_reading)
+    
+    def _convert_floats_to_decimal(self, obj):
+        """Recursively convert floats to Decimal for DynamoDB compatibility"""
+        if isinstance(obj, float):
+            return Decimal(str(obj))
+        elif isinstance(obj, dict):
+            return {k: self._convert_floats_to_decimal(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self._convert_floats_to_decimal(item) for item in obj]
+        else:
+            return obj
     
     def get_recent_readings(self, device_id, hours=24):
         since_timestamp = int((datetime.utcnow() - timedelta(hours=hours)).timestamp())
