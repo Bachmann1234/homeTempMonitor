@@ -3,3 +3,5 @@ venv
 src/__pycache__
 docker
 parameters.json
+.aws-sam
+samconfig.toml
