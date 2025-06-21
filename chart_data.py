@@ -12,7 +12,9 @@ from src.lambda_function import DynamoDBClient
 import boto3
 import pytz
 
-load_dotenv()
+environment = os.getenv('ENVIRONMENT', 'development')
+load_dotenv('.env')
+load_dotenv(f".env.{environment}")
 
 def setup_aws():
     """Setup AWS configuration for local or cloud DynamoDB"""
@@ -113,7 +115,7 @@ def create_charts(df, save_path=None):
     
     # Format x-axis for temperature
     ax1.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
-    ax1.xaxis.set_major_locator(mdates.HourLocator(interval=2))
+    ax1.xaxis.set_major_locator(mdates.HourLocator(interval=1))
     plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45)
     
     # Humidity chart
@@ -131,7 +133,7 @@ def create_charts(df, save_path=None):
     
     # Format x-axis for humidity
     ax2.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
-    ax2.xaxis.set_major_locator(mdates.HourLocator(interval=2))
+    ax2.xaxis.set_major_locator(mdates.HourLocator(interval=1))
     plt.setp(ax2.xaxis.get_majorticklabels(), rotation=45)
     
     # Adjust layout
