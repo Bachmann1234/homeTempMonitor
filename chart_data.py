@@ -89,15 +89,17 @@ def create_charts(df, save_path=None):
     devices = df['device_name'].unique()
     colors = plt.cm.tab10(range(len(devices)))
     
-    # Temperature chart
+    # Temperature chart (convert to Fahrenheit)
     for i, device in enumerate(devices):
         device_data = df[df['device_name'] == device]
         if 'temperature_celsius' in device_data.columns and device_data['temperature_celsius'].notna().any():
-            ax1.plot(device_data['datetime'], device_data['temperature_celsius'], 
+            # Convert Celsius to Fahrenheit
+            temp_fahrenheit = device_data['temperature_celsius'] * 9/5 + 32
+            ax1.plot(device_data['datetime'], temp_fahrenheit, 
                     label=device, color=colors[i], linewidth=2, marker='o', markersize=3)
     
-    ax1.set_title('Temperature (°C)', fontsize=14, fontweight='bold')
-    ax1.set_ylabel('Temperature (°C)', fontsize=12)
+    ax1.set_title('Temperature (°F)', fontsize=14, fontweight='bold')
+    ax1.set_ylabel('Temperature (°F)', fontsize=12)
     ax1.grid(True, alpha=0.3)
     ax1.legend()
     
@@ -149,9 +151,12 @@ def print_summary(df):
         count = len(device_data)
         
         if 'temperature_celsius' in device_data.columns and device_data['temperature_celsius'].notna().any():
-            temp_avg = device_data['temperature_celsius'].mean()
-            temp_range = f"{device_data['temperature_celsius'].min():.1f}-{device_data['temperature_celsius'].max():.1f}"
-            print(f"  - {device}: {count} readings, avg temp {temp_avg:.1f}°C (range: {temp_range}°C)")
+            temp_avg_c = device_data['temperature_celsius'].mean()
+            temp_avg_f = temp_avg_c * 9/5 + 32
+            temp_min_f = device_data['temperature_celsius'].min() * 9/5 + 32
+            temp_max_f = device_data['temperature_celsius'].max() * 9/5 + 32
+            temp_range = f"{temp_min_f:.1f}-{temp_max_f:.1f}"
+            print(f"  - {device}: {count} readings, avg temp {temp_avg_f:.1f}°F (range: {temp_range}°F)")
         else:
             print(f"  - {device}: {count} readings (no temperature data)")
 
