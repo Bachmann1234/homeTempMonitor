@@ -28,8 +28,20 @@ def test_all_sensors():
         print(f"✓ Found {len(devices)} devices")
         
         for device in devices:
-            print(f"  - Device: {device.get('displayName', device['name'])}")
+            device_name = nest_client.get_device_display_name(device)
+            print(f"  - Device: {device_name}")
             print(f"    ID: {device['name']}")
+            
+            # Show additional device info for debugging
+            traits = device.get('traits', {})
+            info_trait = traits.get('sdm.devices.traits.Info', {})
+            print(f"    Custom Name: {info_trait.get('customName', 'None')}")
+            print(f"    Display Name: {device.get('displayName', 'None')}")
+            
+            parent_relations = device.get('parentRelations', [])
+            if parent_relations:
+                for relation in parent_relations:
+                    print(f"    Room: {relation.get('displayName', 'None')}")
             
             sensor_data = nest_client.get_sensor_data(device['name'])
             if sensor_data:
@@ -41,6 +53,7 @@ def test_all_sensors():
                     print(f"    Humidity: {humidity}%")
             else:
                 print("    No sensor data available")
+            print()
         
     except Exception as e:
         print(f"✗ Nest Error: {e}")

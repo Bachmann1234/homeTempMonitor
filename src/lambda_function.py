@@ -29,11 +29,15 @@ def lambda_handler(event, context):
             reading = nest_client.get_sensor_data(device['name'])
             if reading:
                 device_short_id = device['name'].split('/')[-1]  # Get just the device ID part
+                
+                # Try to get a human-readable name from multiple sources
+                device_name = nest_client.get_device_display_name(device)
+                
                 reading_data = {
                     'date': date_str,
                     'timestamp_device': f"{timestamp}#{device_short_id}",
                     'device_id': device['name'],
-                    'device_name': device.get('displayName', device['name']),
+                    'device_name': device_name,
                     'timestamp': timestamp,
                     'readable_time': current_time.isoformat()
                 }
@@ -144,6 +148,31 @@ class NestClient:
             data['humidity_percent'] = humidity_trait.get('ambientHumidityPercent')
             
         return data
+    
+    def get_device_display_name(self, device):
+        """Extract the best human-readable name for a device"""
+        # Try multiple sources for device name
+        
+        # 1. Check displayName
+        if device.get('displayName'):
+            return device['displayName']
+        
+        # 2. Check traits.Info.customName
+        traits = device.get('traits', {})
+        info_trait = traits.get('sdm.devices.traits.Info', {})
+        if info_trait.get('customName'):
+            return info_trait['customName']
+        
+        # 3. Check parentRelations for room name
+        parent_relations = device.get('parentRelations', [])
+        for relation in parent_relations:
+            if relation.get('displayName'):
+                return f"Thermostat ({relation['displayName']})"
+        
+        # 4. Use device type + short ID as fallback
+        device_type = device.get('type', '').replace('sdm.devices.types.', '')
+        short_id = device['name'].split('/')[-1][-8:]  # Last 8 chars of ID
+        return f"{device_type} {short_id}"
 
 
 class OpenWeatherClient:
