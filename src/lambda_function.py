@@ -21,14 +21,21 @@ def lambda_handler(event, context):
         devices = nest_client.get_devices()
         sensor_readings = []
         
+        current_time = datetime.utcnow()
+        timestamp = int(current_time.timestamp())
+        date_str = current_time.strftime('%Y-%m-%d')
+        
         for device in devices:
             reading = nest_client.get_sensor_data(device['name'])
             if reading:
+                device_short_id = device['name'].split('/')[-1]  # Get just the device ID part
                 reading_data = {
+                    'date': date_str,
+                    'timestamp_device': f"{timestamp}#{device_short_id}",
                     'device_id': device['name'],
                     'device_name': device.get('displayName', device['name']),
-                    'timestamp': int(time.time()),
-                    'readable_time': datetime.utcnow().isoformat()
+                    'timestamp': timestamp,
+                    'readable_time': current_time.isoformat()
                 }
                 reading_data.update(reading)
                 sensor_readings.append(reading_data)
@@ -37,10 +44,12 @@ def lambda_handler(event, context):
         outdoor_weather = weather_client.get_weather_data()
         if outdoor_weather:
             outdoor_reading = {
-                'device_id': 'outdoor_medford_ma',
-                'device_name': 'Medford, MA (OpenWeather)',
-                'timestamp': int(time.time()),
-                'readable_time': datetime.utcnow().isoformat()
+                'date': date_str,
+                'timestamp_device': f"{timestamp}#outdoor_weather",
+                'device_id': 'outdoor_weather',
+                'device_name': 'Boston, MA (OpenWeather)',
+                'timestamp': timestamp,
+                'readable_time': current_time.isoformat()
             }
             outdoor_reading.update(outdoor_weather)
             sensor_readings.append(outdoor_reading)
@@ -197,17 +206,26 @@ class DynamoDBClient:
         else:
             return obj
     
-    def get_recent_readings(self, device_id, hours=24):
-        since_timestamp = int((datetime.utcnow() - timedelta(hours=hours)).timestamp())
-        
+    def get_readings_by_date(self, date_str):
+        """Get all readings for a specific date"""
         response = self.table.query(
-            KeyConditionExpression='device_id = :device_id AND #ts >= :since_ts',
-            ExpressionAttributeNames={'#ts': 'timestamp'},
-            ExpressionAttributeValues={
-                ':device_id': device_id,
-                ':since_ts': since_timestamp
-            },
-            ScanIndexForward=False
+            KeyConditionExpression='#date = :date',
+            ExpressionAttributeNames={'#date': 'date'},
+            ExpressionAttributeValues={':date': date_str},
+            ScanIndexForward=True
         )
-        
         return response['Items']
+    
+    def get_readings_date_range(self, start_date, end_date):
+        """Get readings across multiple dates (for charting)"""
+        all_readings = []
+        current_date = datetime.strptime(start_date, '%Y-%m-%d')
+        end_date_obj = datetime.strptime(end_date, '%Y-%m-%d')
+        
+        while current_date <= end_date_obj:
+            date_str = current_date.strftime('%Y-%m-%d')
+            readings = self.get_readings_by_date(date_str)
+            all_readings.extend(readings)
+            current_date += timedelta(days=1)
+            
+        return sorted(all_readings, key=lambda x: x['timestamp'])

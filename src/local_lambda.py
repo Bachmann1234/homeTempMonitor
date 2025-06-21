@@ -31,22 +31,22 @@ def create_local_table():
             TableName=table_name,
             KeySchema=[
                 {
-                    'AttributeName': 'device_id',
+                    'AttributeName': 'date',
                     'KeyType': 'HASH'
                 },
                 {
-                    'AttributeName': 'timestamp',
+                    'AttributeName': 'timestamp_device',
                     'KeyType': 'RANGE'
                 }
             ],
             AttributeDefinitions=[
                 {
-                    'AttributeName': 'device_id',
+                    'AttributeName': 'date',
                     'AttributeType': 'S'
                 },
                 {
-                    'AttributeName': 'timestamp',
-                    'AttributeType': 'N'
+                    'AttributeName': 'timestamp_device',
+                    'AttributeType': 'S'
                 }
             ],
             BillingMode='PAY_PER_REQUEST'
