@@ -12,7 +12,7 @@ from src.lambda_function import DynamoDBClient
 import boto3
 import pytz
 
-environment = os.getenv('ENVIRONMENT', 'development')
+environment = os.getenv('ENVIRONMENT', 'production')
 load_dotenv('.env')
 load_dotenv(f".env.{environment}")
 
@@ -76,10 +76,14 @@ def fetch_data(start_date, end_date, local_tz=None):
     df['datetime_utc'] = pd.to_datetime(df['timestamp'], unit='s', utc=True)
     
     if local_tz:
-        df['datetime'] = df['datetime_utc'].dt.tz_convert(local_tz)
+        # Convert to local timezone
+        local_tz_obj = pytz.timezone(local_tz)
+        df['datetime'] = df['datetime_utc'].dt.tz_convert(local_tz_obj)
+        # Remove timezone info for matplotlib compatibility
+        df['datetime'] = df['datetime'].dt.tz_localize(None)
         df['local_date'] = df['datetime'].dt.date
     else:
-        df['datetime'] = df['datetime_utc']
+        df['datetime'] = df['datetime_utc'].dt.tz_localize(None)
         df['local_date'] = df['datetime'].dt.date
     
     return df
@@ -114,7 +118,7 @@ def create_charts(df, save_path=None):
     ax1.legend()
     
     # Format x-axis for temperature
-    ax1.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+    ax1.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d %H:%M'))
     ax1.xaxis.set_major_locator(mdates.HourLocator(interval=1))
     plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45)
     
@@ -132,7 +136,7 @@ def create_charts(df, save_path=None):
     ax2.legend()
     
     # Format x-axis for humidity
-    ax2.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+    ax2.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d %H:%M'))
     ax2.xaxis.set_major_locator(mdates.HourLocator(interval=1))
     plt.setp(ax2.xaxis.get_majorticklabels(), rotation=45)
     
